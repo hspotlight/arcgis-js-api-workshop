@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Simple Map</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.28/esri/css/esri.css">
+    <style>
+        html,
+        body,
+        #map {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script src="https://js.arcgis.com/3.28/"></script>
+    <script>
+        var map;
+
+        require([
+            "esri/map",
+            "esri/layers/ArcGISTiledMapServiceLayer",
+            "esri/layers/ArcGISDynamicMapServiceLayer",
+            "esri/geometry/Point",
+            "dojo/domReady!"], function (
+                Map,
+                ArcGISTiledMapServiceLayer,
+                ArcGISDynamicMapServiceLayer,
+                Point
+            ) {
+                // TODO: remove config option of a map
+                map = new Map("map", {
+                    basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
+                });
+                map.centerAt(new Point({
+                    "x": 28818240.00291015,
+                    "y": 3682476.1373596755,
+                    "spatialReference": { "wkid": 102100, "latestWkid": 3857 }
+                }));
+                map.setLevel(6);
+
+                // --- BASE MAP ---//
+                // TODO: add basemap with the following url: "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"
+                arcGISTiledMapServiceLayer = ArcGISTiledMapServiceLayer(
+                    "<PLACE THE URL HERE>", {
+                        "id": "basemap"
+                    })
+                map.addLayer(arcGISTiledMapServiceLayer);
+
+                // --- DYANMIC LAYER 1 ---//
+                arcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(
+                    "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer", {
+                        "id": "StateCityHighway"
+                    });
+                map.addLayer(arcGISDynamicMapServiceLayer);
+                // TODO: set visible layer of the dynamic layer and show only sublayer 1 and 2 using setVisibleLayers() function
+                // TODO: set opacity of a dynamic layer with 0.8 using setOpacity() function
+
+                // --- DYANMIC LAYER 2 ---//
+                // TODO: create a variable named arcGISDynamicMapServiceLayer2 of ArcGISDynamicMapServiceLayer class 
+                // with the url: "http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StatesCitiesRivers_USA/MapServer"
+                // and config the option id for 'StatesCitiesRivers'
+                // then set visible layer only sublayer 0 and add layer to map
+            });
+
+    </script>
+</head>
+
+<body>
+    <div id="map"></div>
+</body>
+
+</html>
