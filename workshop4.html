@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Query Task</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.28/esri/css/esri.css">
+    <style>
+        html,
+        body,
+        #map {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script src="https://js.arcgis.com/3.28/"></script>
+    <script>
+        var map;
+
+        require([
+            "esri/map",
+            "esri/layers/ArcGISTiledMapServiceLayer",
+            "esri/layers/ArcGISDynamicMapServiceLayer",
+            "esri/geometry/Point",
+            "esri/symbols/SimpleFillSymbol",
+            "esri/InfoTemplate",
+            "esri/graphic",
+            // TODO: add missing widgets
+
+            "dojo/dom", "dojo/on",
+            "dojo/domReady!"], function (
+                Map,
+                ArcGISTiledMapServiceLayer,
+                ArcGISDynamicMapServiceLayer,
+                Point,
+                SimpleFillSymbol,
+                InfoTemplate,
+                Graphic,
+                Query,
+                QueryTask,
+                dom, on
+            ) {
+                map = new Map("map");
+                map.centerAt(new Point({
+                    "x": 28818240.00291015,
+                    "y": 3682476.1373596755,
+                    "spatialReference": { "wkid": 102100, "latestWkid": 3857 }
+                }));
+                map.setLevel(6);
+
+                // --- BASE MAP ---//
+                arcGISTiledMapServiceLayer = ArcGISTiledMapServiceLayer(
+                    "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer", {
+                        "id": "basemap"
+                    })
+                map.addLayer(arcGISTiledMapServiceLayer);
+
+                // --- DYANMIC LAYER 1 ---//
+                arcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(
+                    "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer", {
+                        "id": "StateCityHighway"
+                    });
+                map.addLayer(arcGISDynamicMapServiceLayer);
+                arcGISDynamicMapServiceLayer.setVisibleLayers([1, 2]);
+                arcGISDynamicMapServiceLayer.setOpacity(0.8);
+
+                // Query Task
+                // TODO: config the QueryTask with the url from "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer/1"
+                var queryTask = new QueryTask();
+
+                // TODO: config  a variable name query from Query class and config it's properties as follows:   
+                // set property to return geometry
+                // set an out fields to make to an infoTemplate shown properly. (hint: look at infoTemplate configuration)
+                query = new Query();
+                query.outFields = [];
+
+                on(dom.byId("queryButton"), "click", execute);
+
+                function execute() {
+                    // TODO: config the whereClause condition with 'LIKE' of a 'STATE_NAME' property
+                    query.where = "";
+                    queryTask.execute(query, showResults);
+                }
+
+                function showResults(results) {
+                    var resultItems = [];
+                    var resultCount = results.features.length;
+                    if (resultCount > 0) {
+                        for (var i = 0; i < resultCount; i++) {
+                            var featureAttributes = results.features[i].attributes;
+                            var geometry = results.features[i].geometry;
+
+                            stateName = featureAttributes['STATE_NAME'];
+                            fillSymbol = new SimpleFillSymbol({
+                                'type': 'esriSFS',
+                                'style': 'esriSFSSolid',
+                                'color': [255, 0, 0, 120],
+                                'outline': {
+                                    'type': 'esriSLS',
+                                    'style': 'esriSLSSolid',
+                                    'color': [255, 0, 0, 255],
+                                    'width': 3
+                                }
+                            });
+
+                            infoTemplate = new InfoTemplate({
+                                "title": "State Name: " + stateName,
+                                "content":
+                                    "OBJECTID: ${OBJECTID}</br>" +
+                                    "STATE_NAME: ${STATE_NAME}</br>" +
+                                    "SUB_REGION: ${SUB_REGION}</br>" +
+                                    "POP1990: ${POP1990}</br>" +
+                                    "MALES: ${MALES}</br>" +
+                                    "FEMALES: ${FEMALES}</br>"
+                            });
+                            map.graphics.add(new Graphic(geometry, fillSymbol, featureAttributes, infoTemplate));
+                        }
+                    } else {
+                        alert("No features");
+                    }
+                }
+            });
+
+    </script>
+</head>
+
+<body>
+    <div style="height: 100%">
+        <div style="height: 75%" id="map"></div>
+        <div>
+            State name: <input type="text" id="stateName" />
+            <button type="button" id="queryButton">Query</button>
+        </div>
+    </div>
+</body>
+
+</html>

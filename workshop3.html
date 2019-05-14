@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Draw Graphics and InfoTemplate</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.28/esri/css/esri.css">
+    <style>
+        .info {
+            top: 20px;
+            color: #444;
+            height: auto;
+            font-family: arial;
+            right: 20px;
+            margin: 5px;
+            padding: 10px;
+            position: absolute;
+            width: 150px;
+            z-index: 40;
+            border: solid 2px #666;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        html,
+        body,
+        #map {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .toolbar-button {
+            width: 100%
+        }
+
+        button {
+            display: block;
+        }
+    </style>
+    <script src="https://js.arcgis.com/3.28/"></script>
+    <script>
+        var map;
+
+        require([
+            "esri/map",
+            "esri/layers/ArcGISTiledMapServiceLayer",
+            "esri/layers/ArcGISDynamicMapServiceLayer",
+            "esri/geometry/Point",
+            "esri/toolbars/draw",
+            // TODO: add missing widgets
+
+            "esri/InfoTemplate",
+            "esri/graphic",
+            "dojo/dom", "dojo/on",
+            "dojo/domReady!"], function (
+                Map,
+                ArcGISTiledMapServiceLayer,
+                ArcGISDynamicMapServiceLayer,
+                Point,
+                Draw,
+                SimpleMarkerSymbol,
+                SimpleLineSymbol,
+                SimpleFillSymbol,
+                InfoTemplate,
+                Graphic,
+                dom, on
+            ) {
+                map = new Map("map");
+                map.centerAt(new Point({
+                    "x": 28818240.00291015,
+                    "y": 3682476.1373596755,
+                    "spatialReference": { "wkid": 102100, "latestWkid": 3857 }
+                }));
+                map.setLevel(6);
+                map.on("load", initToolbar);
+
+                // --- BASE MAP ---//
+                arcGISTiledMapServiceLayer = ArcGISTiledMapServiceLayer(
+                    "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer", {
+                        "id": "basemap"
+                    })
+                map.addLayer(arcGISTiledMapServiceLayer);
+
+                // --- DYANMIC LAYER 1 ---//
+                arcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(
+                    "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer", {
+                        "id": "StateCityHighway"
+                    });
+                map.addLayer(arcGISDynamicMapServiceLayer);
+                arcGISDynamicMapServiceLayer.setVisibleLayers([1, 2]);
+                arcGISDynamicMapServiceLayer.setOpacity(0.8);
+
+                // --- DYANMIC LAYER 2 ---//
+                arcGISDynamicMapServiceLayer2 = ArcGISDynamicMapServiceLayer(
+                    "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer", {
+                        "id": "StatesCitiesRivers"
+                    });
+                arcGISDynamicMapServiceLayer2.setVisibleLayers([0]);
+                map.addLayer(arcGISDynamicMapServiceLayer2);
+
+                // function 
+
+                function initToolbar() {
+                    tb = new Draw(map);
+                    tb.on("draw-end", addGraphic);
+
+                    // event delegation so a click handler is not
+                    // needed for each individual button
+                    on(dom.byId("info"), "click", function (evt) {
+                        if (evt.target.id === "info") {
+                            return;
+                        }
+                        var tool = evt.target.id.toLowerCase();
+                        map.disableMapNavigation();
+                        tb.activate(tool);
+                    });
+                }
+
+                function addGraphic(evt) {
+                    //deactivate the toolbar and clear existing graphics 
+                    tb.deactivate();
+                    map.enableMapNavigation();
+
+                    size = dom.byId('size').value;
+                    colorString = dom.byId('color').value;
+                    color = colorString.split(',').map(color => parseInt(color, 10));
+
+                    // figure out which symbol to use
+                    var symbol;
+                    if (evt.geometry.type === "point" || evt.geometry.type === "multipoint") {
+                        // TODO: config an object of SimpleMarkerSymbol class to draw a marker graphic properly that
+                        // use color and size from textbox given from the user
+                        markerSymbol = new SimpleMarkerSymbol();
+
+                        symbol = markerSymbol;
+                    } else if (evt.geometry.type === "line" || evt.geometry.type === "polyline") {
+                        var lineSymbol = new SimpleLineSymbol({
+                            'type': 'esriSLS',
+                            'style': 'esriSLSSolid',
+                            'color': color,
+                            'width': size
+                        });
+                        symbol = lineSymbol;
+                    }
+                    else {
+                        fillSymbol = new SimpleFillSymbol({
+                            'type': 'esriSFS',
+                            'style': 'esriSFSSolid',
+                            'color': color,
+                            'outline': {
+                                'type': 'esriSLS',
+                                'style': 'esriSLSSolid',
+                                'color': [255, 0, 0, 255],
+                                'width': size
+                            }
+                        });
+                        symbol = fillSymbol;
+                    }
+
+                    attribute = {
+                        "geometryType": evt.geometry.type,
+                        "size": size,
+                        "color": color
+                    };
+
+                    // TODO: Construct a Graphic using feature's geometry, symbol with specific to 
+                    // feature's geometry type, and infoTemplate
+
+
+                    // TODO: add graphic to a map
+                }
+            });
+
+    </script>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div class="info">
+        <div id="info">
+            <div>Select a shape then draw on map to add graphic</div>
+            <button class="toolbar-button" id="Point">Point</button>
+            <button class="toolbar-button" id="Polyline">Polyline</button>
+            <button class="toolbar-button" id="Polygon">Polygon</button>
+        </div>
+        <div class="config" style="margin-top: 10px">
+            Size: <input type="number" id="size" style="width:100%;" placeholder="12" value="12"> <br /> <br />
+            Color (R, G, B, A): <input type="text" id="color" style="width:100%;" placeholder="r,g,b,a" value="255,0,0,125"> <br />
+        </div>
+    </div>
+</body>
+
+</html>

@@ -4,7 +4,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
-    <title>Adding layers to a map [Part2]</title>
+    <title>Adding layers to a map [Part1]</title>
     <link rel="stylesheet" href="https://js.arcgis.com/3.28/esri/css/esri.css">
     <style>
         html,
@@ -24,15 +24,16 @@
             "esri/layers/ArcGISTiledMapServiceLayer",
             "esri/layers/ArcGISDynamicMapServiceLayer",
             "esri/geometry/Point",
-            "dojo/dom", "dojo/on",
             "dojo/domReady!"], function (
                 Map,
                 ArcGISTiledMapServiceLayer,
                 ArcGISDynamicMapServiceLayer,
-                Point,
-                dom, on
+                Point
             ) {
-                map = new Map("map");
+                // TODO: remove config option of a map
+                map = new Map("map", {
+                    basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
+                });
                 map.centerAt(new Point({
                     "x": 28818240.00291015,
                     "y": 3682476.1373596755,
@@ -63,36 +64,13 @@
                     });
                 arcGISDynamicMapServiceLayer2.setVisibleLayers([0]);
                 map.addLayer(arcGISDynamicMapServiceLayer2);
-
-                function filterByStateName(evt) {
-                    stateName = dom.byId('stateName').value;
-                    console.log(stateName);
-                    condition = "";
-                    if (stateName) {
-                      // TODO: replace the stateName in the condition
-                      condition = "STATE_NAME = '" + '<PLACE THE STATE_NAME HERE>' + "'";
-                    }
-                    
-                    // TODO: replace the empty array with the condition
-                    map.getLayer('StateCityHighway').setLayerDefinitions([])
-                    map.getLayer('StatesCitiesRivers').setLayerDefinitions([])
-                }
-
-                // TODO: bind click event of filter Button with filterByStateName function
-                // hint: use dom.byId() to select HTML element
             });
 
     </script>
 </head>
 
 <body>
-    <div style="height: 100%">
-        <div style="height: 75%" id="map"></div>
-        <div>
-            State name: <input type="text" id="stateName"/>
-            <button type="button" id="filterButton">Filter</button>
-        </div>
-    </div>
+    <div id="map"></div>
 </body>
 
 </html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Identify Task</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.28/esri/css/esri.css">
+    <style>
+        html,
+        body,
+        #map {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script src="https://js.arcgis.com/3.28/"></script>
+    <script>
+        var map;
+
+        require([
+            "esri/map",
+            "esri/layers/ArcGISTiledMapServiceLayer",
+            "esri/layers/ArcGISDynamicMapServiceLayer",
+            "esri/geometry/Point",
+            "esri/symbols/SimpleFillSymbol",
+            "esri/InfoTemplate",
+            "esri/graphic",
+            "esri/tasks/IdentifyTask",
+            "esri/tasks/IdentifyParameters",
+            "dojo/dom", "dojo/on",
+            "dojo/domReady!"], function (
+                Map,
+                ArcGISTiledMapServiceLayer,
+                ArcGISDynamicMapServiceLayer,
+                Point,
+                SimpleFillSymbol,
+                InfoTemplate,
+                Graphic,
+                IdentifyTask,
+                IdentifyParameters,
+                dom, on
+            ) {
+                var identifyTask, identifyParams;
+
+                map = new Map("map");
+                map.centerAt(new Point({
+                    "x": 28818240.00291015,
+                    "y": 3682476.1373596755,
+                    "spatialReference": { "wkid": 102100, "latestWkid": 3857 }
+                }));
+                map.setLevel(6);
+                map.on("load", mapReady);
+
+                // --- BASE MAP ---//
+                arcGISTiledMapServiceLayer = ArcGISTiledMapServiceLayer(
+                    "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer", {
+                        "id": "basemap"
+                    })
+                map.addLayer(arcGISTiledMapServiceLayer);
+
+                // --- DYANMIC LAYER 1 ---//
+                arcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(
+                    "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer", {
+                        "id": "StateCityHighway"
+                    });
+                map.addLayer(arcGISDynamicMapServiceLayer);
+                arcGISDynamicMapServiceLayer.setVisibleLayers([1, 2]);
+                arcGISDynamicMapServiceLayer.setOpacity(0.8);
+
+                var stateCityHighwayURL = "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer";
+
+                function mapReady() {
+                    map.on("click", executeIdentifyTask);
+                    //create identify tasks and setup parameters
+                    identifyTask = new IdentifyTask(stateCityHighwayURL);
+
+                    identifyParams = new IdentifyParameters();
+                    identifyParams.tolerance = 3;
+                    identifyParams.returnGeometry = true;
+                    identifyParams.layerIds = [1];
+                    identifyParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
+                    identifyParams.width = map.width;
+                    identifyParams.height = map.height;
+                }
+
+                function executeIdentifyTask(event) {
+                    identifyParams.geometry = event.mapPoint;
+                    identifyParams.mapExtent = map.extent;
+
+                    var deferred = identifyTask
+                        .execute(identifyParams)
+                        .addCallback(function (response) {
+                            map.graphics.clear();
+                            if (response.length === 0) {
+                                alert("No feature");
+                            } else {
+                                response.forEach((result) => {
+                                    var feature = result.feature;
+                                    var layerName = result.layerName;
+
+                                    feature.attributes.layerName = layerName;
+                                    if (layerName === 'states') {
+                                        fillSymbol = new SimpleFillSymbol({
+                                            'type': 'esriSFS',
+                                            'style': 'esriSFSSolid',
+                                            'color': [255, 0, 0, 120],
+                                            'outline': {
+                                                'type': 'esriSLS',
+                                                'style': 'esriSLSSolid',
+                                                'color': [255, 0, 0, 255],
+                                                'width': 3
+                                            }
+                                        });
+
+                                        var stateTemplate = new InfoTemplate("${STATE_NAME}",
+                                            "OBJECTID: ${OBJECTID}</br>" +
+                                            "STATE_NAME: ${STATE_NAME}</br>" +
+                                            "SUB_REGION: ${SUB_REGION}</br>" +
+                                            "POP1990: ${POP1990}</br>" +
+                                            "MALES: ${MALES}</br>" +
+                                            "FEMALES: ${FEMALES}</br>"
+                                        );
+                                        graphic = new Graphic(feature.geometry, fillSymbol, feature.attributes, stateTemplate);
+                                        map.graphics.add(graphic);
+                                        map.infoWindow.setFeatures([graphic])
+                                        map.infoWindow.show(feature.geometry.getCentroid(), true)
+                                    }
+                                });
+                            }
+                        });
+                }
+            });
+
+    </script>
+</head>
+
+<body>
+    <div style="height: 100%">
+        <div id="map"></div>
+    </div>
+</body>
+
+</html>

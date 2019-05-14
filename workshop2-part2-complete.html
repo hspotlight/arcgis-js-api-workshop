@@ -69,17 +69,14 @@
                     console.log(stateName);
                     condition = "";
                     if (stateName) {
-                      // TODO: replace the stateName in the condition
-                      condition = "STATE_NAME = '" + '<PLACE THE STATE_NAME HERE>' + "'";
+                      condition = "STATE_NAME = '" + stateName + "'";
                     }
-                    
-                    // TODO: replace the empty array with the condition
-                    map.getLayer('StateCityHighway').setLayerDefinitions([])
-                    map.getLayer('StatesCitiesRivers').setLayerDefinitions([])
+
+                    map.getLayer('StateCityHighway').setLayerDefinitions(["", "", condition])
+                    map.getLayer('StatesCitiesRivers').setLayerDefinitions([condition])
                 }
 
-                // TODO: bind click event of filter Button with filterByStateName function
-                // hint: use dom.byId() to select HTML element
+                on(dom.byId('filterButton'), 'click', filterByStateName);
             });
 
     </script>

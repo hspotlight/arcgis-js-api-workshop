@@ -14,8 +14,8 @@
             padding: 0;
         }
     </style>
-    <!-- TODO: Add request ArcGIS API for Javascript here (.css and .js) -->
-    
+    <link rel="stylesheet" href="https://js.arcgis.com/3.28/esri/css/esri.css">
+    <script src="https://js.arcgis.com/3.28/"></script>
     <script>
         var map;
 
@@ -27,10 +27,9 @@
                 map = new Map("map", {
                     basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
                 });
+                map.centerAt([100.5434, 13.7030]);
 
-                // TODO: use centerAt() function to zoom the map to the specific location
-
-                // TODO: use setLevel() function to scale the map by level to fit the whole thailand
+                map.setLevel(6);
             });
 
     </script>
