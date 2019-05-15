@@ -18,18 +18,22 @@
     <script src="https://js.arcgis.com/3.28/"></script>
     <script>
         var map;
-
+        var projectionLoaded = false;
         require([
             "esri/map",
             "esri/layers/ArcGISTiledMapServiceLayer",
             "esri/layers/ArcGISDynamicMapServiceLayer",
             "esri/geometry/Point",
+            "esri/geometry/projection",
+            "esri/SpatialReference",
             "dojo/dom", "dojo/on",
             "dojo/domReady!"], function (
                 Map,
                 ArcGISTiledMapServiceLayer,
                 ArcGISDynamicMapServiceLayer,
                 Point,
+                projection,
+                SpatialReference,
                 dom, on
             ) {
                 map = new Map("map");
@@ -58,7 +62,7 @@
 
                 // --- DYANMIC LAYER 2 ---//
                 arcGISDynamicMapServiceLayer2 = ArcGISDynamicMapServiceLayer(
-                    "http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StatesCitiesRivers_USA/MapServer", {
+                    "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer", {
                         "id": "StatesCitiesRivers"
                     });
                 arcGISDynamicMapServiceLayer2.setVisibleLayers([0]);
@@ -69,19 +73,28 @@
                     console.log(stateName);
                     condition = "";
                     if (stateName) {
-                      // TODO: replace the stateName in the condition
-                      condition = "STATE_NAME = '" + '<PLACE THE STATE_NAME HERE>' + "'";
+                        condition = "STATE_NAME = '" + stateName + "'";
                     }
-                    
-                    // TODO: replace the empty array with the condition
-                    map.getLayer('StateCityHighway').setLayerDefinitions([])
-                    map.getLayer('StatesCitiesRivers').setLayerDefinitions([])
+
+                    map.getLayer('StateCityHighway').setLayerDefinitions(["", "", condition])
+                    map.getLayer('StatesCitiesRivers').setLayerDefinitions([condition])
                 }
 
-                // TODO: bind click event of filter Button with filterByStateName function
-                // hint: use dom.byId() to select HTML element
-            });
+                on(dom.byId('filterButton'), 'click', filterByStateName);
 
+                map.on('click', function (evt) {
+                    // console.log(evt);
+                    if (projectionLoaded) {
+                        point = projection.project(evt.mapPoint, new SpatialReference({ "wkid": 4326 }));
+                        console.log(point);
+                        console.log('(Lat, Long) = (' + point.y + ', ' + point.x + ')');
+                    }
+                })
+
+                projection.load().then(function () {
+                    this.projectionLoaded = true;
+                });
+            });
     </script>
 </head>
 
@@ -89,7 +102,7 @@
     <div style="height: 100%">
         <div style="height: 75%" id="map"></div>
         <div>
-            State name: <input type="text" id="stateName"/>
+            State name: <input type="text" id="stateName" />
             <button type="button" id="filterButton">Filter</button>
         </div>
     </div>

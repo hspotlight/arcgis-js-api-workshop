@@ -24,12 +24,20 @@
             "esri/layers/ArcGISTiledMapServiceLayer",
             "esri/layers/ArcGISDynamicMapServiceLayer",
             "esri/geometry/Point",
+            "esri/renderers/ClassBreaksRenderer",
+            "esri/layers/FeatureLayer",
+            "esri/symbols/SimpleFillSymbol",
+            "esri/Color",
             "dojo/dom", "dojo/on",
             "dojo/domReady!"], function (
                 Map,
                 ArcGISTiledMapServiceLayer,
                 ArcGISDynamicMapServiceLayer,
                 Point,
+                ClassBreaksRenderer,
+                FeatureLayer,
+                SimpleFillSymbol,
+                Color,
                 dom, on
             ) {
                 map = new Map("map");
@@ -53,12 +61,12 @@
                         "id": "StateCityHighway"
                     });
                 map.addLayer(arcGISDynamicMapServiceLayer);
-                arcGISDynamicMapServiceLayer.setVisibleLayers([1, 2]);
+                arcGISDynamicMapServiceLayer.setVisibleLayers([1]);
                 arcGISDynamicMapServiceLayer.setOpacity(0.8);
 
                 // --- DYANMIC LAYER 2 ---//
                 arcGISDynamicMapServiceLayer2 = ArcGISDynamicMapServiceLayer(
-                    "http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StatesCitiesRivers_USA/MapServer", {
+                    "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityRivers_USA/MapServer", {
                         "id": "StatesCitiesRivers"
                     });
                 arcGISDynamicMapServiceLayer2.setVisibleLayers([0]);
@@ -69,17 +77,35 @@
                     console.log(stateName);
                     condition = "";
                     if (stateName) {
-                      // TODO: replace the stateName in the condition
-                      condition = "STATE_NAME = '" + '<PLACE THE STATE_NAME HERE>' + "'";
+                        condition = "STATE_NAME = '" + stateName + "'";
                     }
-                    
-                    // TODO: replace the empty array with the condition
-                    map.getLayer('StateCityHighway').setLayerDefinitions([])
-                    map.getLayer('StatesCitiesRivers').setLayerDefinitions([])
+
+                    map.getLayer('StateCityHighway').setLayerDefinitions(["", "", condition])
+                    map.getLayer('StatesCitiesRivers').setLayerDefinitions([condition])
                 }
 
-                // TODO: bind click event of filter Button with filterByStateName function
-                // hint: use dom.byId() to select HTML element
+                on(dom.byId('filterButton'), 'click', filterByStateName);
+
+
+                var defaultSymbol = new SimpleFillSymbol();
+                defaultSymbol.setColor(new Color([150, 150, 150, 0.5]));
+
+
+                var renderer = new ClassBreaksRenderer(defaultSymbol, "AVG_SALE87");
+                renderer.addBreak(0, 40000, new SimpleFillSymbol().setColor(new Color([0, 255, 0, 0.5])));
+                renderer.addBreak(40000, 60000, new SimpleFillSymbol().setColor(new Color([255, 255, 0, 0.5])));
+                renderer.addBreak(60000, 100000, new SimpleFillSymbol().setColor(new Color([255, 120, 0, 0.5])));
+                renderer.addBreak(100000, 200000, new SimpleFillSymbol().setColor(new Color([255, 0, 0, 0.5])));
+
+                var featureLayer = new FeatureLayer("https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer/2", {
+                    // mode: FeatureLayer.MODE_SNAPSHOT,
+                    outFields: ["*"],
+                    id: 'featurelayer'
+                });
+
+                // featureLayer.setDefinitionExpression("STATE_NAME = 'Texas'");
+                featureLayer.setRenderer(renderer);
+                map.addLayer(featureLayer);
             });
 
     </script>
@@ -89,7 +115,7 @@
     <div style="height: 100%">
         <div style="height: 75%" id="map"></div>
         <div>
-            State name: <input type="text" id="stateName"/>
+            State name: <input type="text" id="stateName" />
             <button type="button" id="filterButton">Filter</button>
         </div>
     </div>

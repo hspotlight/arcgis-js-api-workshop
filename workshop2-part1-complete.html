@@ -31,9 +31,7 @@
                 Point
             ) {
                 // TODO: remove config option of a map
-                map = new Map("map", {
-                    basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
-                });
+                map = new Map("map");
                 map.centerAt(new Point({
                     "x": 28818240.00291015,
                     "y": 3682476.1373596755,
@@ -59,7 +57,7 @@
 
                 // --- DYANMIC LAYER 2 ---//
                 arcGISDynamicMapServiceLayer2 = ArcGISDynamicMapServiceLayer(
-                    "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer", {
+                    "http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StatesCitiesRivers_USA/MapServer", {
                         "id": "StatesCitiesRivers"
                     });
                 arcGISDynamicMapServiceLayer2.setVisibleLayers([0]);
