@@ -24,9 +24,12 @@
             "esri/layers/ArcGISTiledMapServiceLayer",
             "esri/layers/ArcGISDynamicMapServiceLayer",
             "esri/geometry/Point",
+            "esri/symbols/SimpleMarkerSymbol",
             "esri/symbols/SimpleFillSymbol",
             "esri/InfoTemplate",
             "esri/graphic",
+            "esri/config",
+            "esri/urlUtils",
             "esri/tasks/query",
             "esri/tasks/QueryTask",
             "dojo/dom", "dojo/on",
@@ -35,13 +38,37 @@
                 ArcGISTiledMapServiceLayer,
                 ArcGISDynamicMapServiceLayer,
                 Point,
+                SimpleMarkerSymbol,
                 SimpleFillSymbol,
                 InfoTemplate,
                 Graphic,
+                esriConfig,
+                urlUtils,
                 Query,
                 QueryTask,
                 dom, on
             ) {
+                // esriConfig
+                esriConfig.defaults.io.proxyUrl = `http://localhost/proxy/proxy.ashx`;
+                // esriConfig.defaults.io.alwaysUseProxy = false;
+                urlUtils.addProxyRule({
+                    proxyUrl: esriConfig.defaults.io.proxyUrl,
+                    urlPrefix: 'sampleserver1.arcgisonline.com/arcgis/rest/services'
+                });
+
+                urlUtils.addProxyRule({
+                    proxyUrl: esriConfig.defaults.io.proxyUrl,
+                    urlPrefix: 'services.arcgisonline.com/ArcGIS/rest/services'
+                });
+
+                urlUtils.addProxyRule({
+                    proxyUrl: esriConfig.defaults.io.proxyUrl,
+                    urlPrefix: 'server.arcgisonline.com/ArcGIS/rest/services'
+                });
+
+
+                // map
+
                 map = new Map("map");
                 map.centerAt(new Point({
                     "x": 28818240.00291015,
@@ -66,6 +93,14 @@
                 arcGISDynamicMapServiceLayer.setVisibleLayers([1, 2]);
                 arcGISDynamicMapServiceLayer.setOpacity(0.8);
 
+                // --- DYANMIC LAYER 2 ---//
+                // arcGISDynamicMapServiceLayer2 = ArcGISDynamicMapServiceLayer(
+                //     "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StatesCitiesRivers_USA/MapServer", {
+                //         "id": "StatesCitiesRivers"
+                //     });
+                // arcGISDynamicMapServiceLayer2.setVisibleLayers([0]);
+                // map.addLayer(arcGISDynamicMapServiceLayer2);
+
                 // Query Task
                 var queryTask = new QueryTask("https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer/1");
 
@@ -80,8 +115,8 @@
                         "HOUSEHOLDS", "MALES", "FEMALES", "WHITE"
                     ];
                     query.outSpatialReference = map.spatialReference;
-                    query
-                    query.where = "STATE_NAME LIKE '%" + dom.byId("stateName").value + "%'";
+                    stateName = dom.byId("stateName").value.toLocaleLowerCase();
+                    query.where = "LOWER(STATE_NAME) LIKE '%" + stateName + "%'";
                     queryTask.execute(query, showResults);
                 }
 
@@ -119,8 +154,53 @@
                             });
                             graphic = new Graphic(geometry, fillSymbol, featureAttributes, infoTemplate);
                             map.graphics.add(graphic);
-                            map.centerAt(graphic.geometry.getCentroid());
-                            map.setLevel(8);
+
+                            map.centerAt(graphic.geometry.getCentroid(), true);
+                            // map.setLevel(10);
+
+                            spatialQuery(featureAttributes['STATE_NAME'], graphic.geometry);
+                        }
+                    } else {
+                        alert("No features");
+                    }
+                }
+
+                // added for spatial query
+
+                function spatialQuery(stateName, geometry) {
+                    query = new Query();
+                    query.returnGeometry = true;
+                    query.outSpatialReference = map.spatialReference;
+                    query.geometry = geometry;
+                    // query.where = "STATE_NAME = '" + stateName + "'";
+
+                    task = new QueryTask("https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StatesCitiesRivers_USA/MapServer/0");
+                    task.execute(query, showPoints);
+                }
+
+                function showPoints(results) {
+                    var resultItems = [];
+                    var resultCount = results.features.length;
+                    if (resultCount > 0) {
+                        for (var i = 0; i < resultCount; i++) {
+                            var featureAttributes = results.features[i].attributes;
+                            var geometry = results.features[i].geometry;
+
+                            markerSymbol = new SimpleMarkerSymbol({
+                                "type": "esriSMS",
+                                "style": "esriSMSCircle",
+                                "color": [255, 255, 0, 255],
+                                "size": 4,
+                                "outline": {
+                                    "type": "esriSLS",
+                                    "style": "esriSLSSolid",
+                                    "color": [0, 0, 0, 255],
+                                    "width": 1
+                                }
+                            });
+
+                            graphic = new Graphic(geometry, markerSymbol, featureAttributes)
+                            map.graphics.add(graphic);
                         }
                     } else {
                         alert("No features");
@@ -135,7 +215,7 @@
     <div style="height: 100%">
         <div style="height: 75%" id="map"></div>
         <div>
-            State name: <input type="text" id="stateName" />
+            State name: <input type="text" id="stateName" value="Texas" />
             <button type="button" id="queryButton">Query</button>
         </div>
     </div>

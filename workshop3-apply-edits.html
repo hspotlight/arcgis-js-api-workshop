@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Draw Graphics and show popup</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.28/esri/css/esri.css">
+    <style>
+        .info {
+            top: 20px;
+            color: #444;
+            height: auto;
+            font-family: arial;
+            right: 20px;
+            margin: 5px;
+            padding: 10px;
+            position: absolute;
+            width: 150px;
+            z-index: 40;
+            border: solid 2px #666;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        html,
+        body,
+        #map {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .toolbar-button {
+            width: 100%
+        }
+
+        button {
+            display: block;
+        }
+    </style>
+    <script src="https://js.arcgis.com/3.28/"></script>
+    <script>
+        var map;
+
+        require([
+            "esri/map",
+            "esri/layers/ArcGISTiledMapServiceLayer",
+            "esri/layers/ArcGISDynamicMapServiceLayer",
+            "esri/layers/FeatureLayer",
+            "esri/geometry/Point",
+            "esri/toolbars/draw",
+            "esri/symbols/SimpleMarkerSymbol",
+            "esri/symbols/SimpleLineSymbol",
+            "esri/symbols/SimpleFillSymbol",
+            "esri/InfoTemplate",
+            "esri/config",
+            "esri/urlUtils",
+            "esri/geometry/webMercatorUtils",
+            "esri/graphic",
+            "dojo/dom", "dojo/on",
+            "dojo/domReady!"], function (
+                Map,
+                ArcGISTiledMapServiceLayer,
+                ArcGISDynamicMapServiceLayer,
+                FeatureLayer,
+                Point,
+                Draw,
+                SimpleMarkerSymbol,
+                SimpleLineSymbol,
+                SimpleFillSymbol,
+                InfoTemplate,
+                esriConfig,
+                urlUtils,
+                webMercatorUtils,
+                Graphic,
+                dom, on
+            ) {
+                ////
+
+                esriConfig.defaults.io.proxyUrl = "http://localhost/proxy/proxy.ashx";
+
+                urlUtils.addProxyRule({
+                    proxyUrl: esriConfig.defaults.io.proxyUrl,
+                    urlPrefix: "appserver2.cdg.co.th/arcgis/rest/services"
+                });
+
+                ////
+
+                map = new Map("map");
+                map.centerAt(new Point({
+                    "x": 51267623.710668944,
+                    "y": 1540162.3033159522,
+                    "spatialReference": { "wkid": 102100, "latestWkid": 3857 }
+                }));
+                map.setLevel(17)
+                map.on("load", initToolbar);
+
+                // --- BASE MAP ---//
+                arcGISTiledMapServiceLayer = ArcGISTiledMapServiceLayer(
+                    "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer", {
+                        "id": "basemap"
+                    })
+                map.addLayer(arcGISTiledMapServiceLayer);
+
+                // --- DYANMIC LAYER 1 ---//
+                arcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(
+                    "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer", {
+                        "id": "StateCityHighway"
+                    });
+                map.addLayer(arcGISDynamicMapServiceLayer);
+                arcGISDynamicMapServiceLayer.setVisibleLayers([1, 2]);
+                arcGISDynamicMapServiceLayer.setOpacity(0.8);
+
+                // --- DYANMIC LAYER 2 ---//
+                arcGISDynamicMapServiceLayer2 = ArcGISDynamicMapServiceLayer(
+                    "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer", {
+                        "id": "StatesCitiesRivers"
+                    });
+                arcGISDynamicMapServiceLayer2.setVisibleLayers([0]);
+                map.addLayer(arcGISDynamicMapServiceLayer2);
+
+                // --- DYANMIC LAYER 3 ---//
+                arcGISDynamicMapServiceLayer3 = ArcGISDynamicMapServiceLayer(
+                    "http://appserver2.cdg.co.th/arcgis/rest/services/AtlasX/CITY/MapServer/", {
+                        "id": "CityThailand"
+                    });
+                map.addLayer(arcGISDynamicMapServiceLayer3);
+
+                // Feature Layer
+                featureLayer = new FeatureLayer(
+                    "http://appserver2.cdg.co.th/arcgis/rest/services/AtlasX/CITY/FeatureServer/0"
+                );
+
+                // function 
+
+                function initToolbar() {
+                    tb = new Draw(map);
+                    tb.on("draw-end", addGraphic);
+
+                    // event delegation so a click handler is not
+                    // needed for each individual button
+                    on(dom.byId("info"), "click", function (evt) {
+                        if (evt.target.id === "info") {
+                            return;
+                        }
+                        var tool = evt.target.id.toLowerCase();
+                        map.disableMapNavigation();
+                        tb.activate(tool);
+                    });
+                }
+
+                function addGraphic(evt) {
+                    //deactivate the toolbar and clear existing graphics 
+                    tb.deactivate();
+                    map.enableMapNavigation();
+
+                    size = dom.byId('size').value;
+                    colorString = dom.byId('color').value;
+                    color = colorString.split(',').map(color => parseInt(color, 10));
+
+                    // figure out which symbol to use
+                    var symbol;
+                    if (evt.geometry.type === "point" || evt.geometry.type === "multipoint") {
+                        markerSymbol = new SimpleMarkerSymbol({
+                            "type": "esriSMS",
+                            "style": "esriSMSCircle",
+                            "color": color,
+                            "size": size,
+                            "outline": {
+                                "type": "esriSLS",
+                                "style": "esriSLSSolid",
+                                "color": [0, 0, 0, 255],
+                                "width": 1
+                            }
+                        });
+                        symbol = markerSymbol;
+                    } else if (evt.geometry.type === "line" || evt.geometry.type === "polyline") {
+                        var lineSymbol = new SimpleLineSymbol({
+                            'type': 'esriSLS',
+                            'style': 'esriSLSSolid',
+                            'color': color,
+                            'width': size
+                        });
+                        symbol = lineSymbol;
+                    }
+                    else {
+                        fillSymbol = new SimpleFillSymbol({
+                            'type': 'esriSFS',
+                            'style': 'esriSFSSolid',
+                            'color': color,
+                            'outline': {
+                                'type': 'esriSLS',
+                                'style': 'esriSLSSolid',
+                                'color': [255, 0, 0, 255],
+                                'width': size
+                            }
+                        });
+                        symbol = fillSymbol;
+                    }
+
+                    attribute = {
+                        "geometryType": evt.geometry.type,
+                        "size": size,
+                        "color": color
+                    };
+                    infoTemplate = new InfoTemplate({
+                        "title": "Symbol: " + evt.geometry.type,
+                        "content":
+                            "Geometry Type: ${geometryType}</br>" +
+                            "Size: ${size}</br>" +
+                            "Color: ${color}</br>"
+                    });
+                    map.graphics.add(new Graphic(evt.geometry, symbol, attribute, infoTemplate));
+
+                    if (evt.geometry.type === "point") {
+                        longLat = webMercatorUtils.xyToLngLat(evt.geometry.x, evt.geometry.y)
+                        longLatPoint = new Point({
+                            "x": longLat[0],
+                            "y": longLat[1],
+                            "spatialReference": {
+                                "wkid": 4326
+                            }
+                        });
+                        addList = [
+                            {
+                                attributes: {
+                                    "SHOP_NAME": "555555555555"
+                                },
+                                geometry: longLatPoint
+                            }
+                        ];
+                        featureLayer.applyEdits(addList, null, null);
+                    }
+
+                }
+            });
+
+    </script>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div class="info">
+        <div id="info">
+            <div>Select a shape then draw on map to add graphic</div>
+            <button class="toolbar-button" id="Point">Point</button>
+            <button class="toolbar-button" id="Polyline">Polyline</button>
+            <button class="toolbar-button" id="Polygon">Polygon</button>
+        </div>
+        <div class="config" style="margin-top: 10px">
+            Size: <input type="number" id="size" style="width:100%;" placeholder="12" value="12"> <br /> <br />
+            Color (R, G, B, A): <input type="text" id="color" style="width:100%;" placeholder="r,g,b,a"
+                value="255,0,0,125"> <br />
+        </div>
+    </div>
+</body>
+
+</html>

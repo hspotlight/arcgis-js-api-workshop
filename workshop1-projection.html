@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Create simple web map application</title>
+    <style>
+        html,
+        body,
+        #map {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.28/esri/css/esri.css">
+    <script src="https://js.arcgis.com/3.28/"></script>
+    <script>
+        var map;
+
+        require([
+            "esri/map",
+            "esri/geometry/projection",
+            "esri/geometry/Point",
+            "esri/SpatialReference",
+            "dojo/domReady!"], function (
+                Map,
+                projection,
+                Point,
+                SpatialReference
+            ) {
+                map = new Map("map", {
+                    basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
+                });
+                // map.centerAt([100.5434, 13.7030]);
+
+                map.setLevel(6);
+                projection.load().then(function () {
+                    console.log("Hello");
+                    var point = new Point(100.5434, 13.7030);
+                    var outSpatialReference = new SpatialReference({
+                        wkid: 102100
+                    });
+                    p = projection.project(point, outSpatialReference);
+                    map.centerAt(p);
+                });
+            });
+
+    </script>
+</head>
+
+<body>
+    <div id="map"></div>
+</body>
+
+</html>
